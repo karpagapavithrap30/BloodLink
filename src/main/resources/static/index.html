@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BloodLink – Blood Donor Registry & Search</title>
+  <meta name="description" content="BloodLink helps patients find willing blood donors by blood group and city during emergencies." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ══════════════════════════════════════════════
+       DESIGN TOKENS
+    ══════════════════════════════════════════════ */
+    :root {
+      --crimson:       #c0182a;
+      --crimson-dark:  #8b0000;
+      --crimson-light: #e63950;
+      --rose:          #ff6b6b;
+      --bg:            #f8f9fb;
+      --surface:       #ffffff;
+      --surface2:      #f1f3f8;
+      --text:          #1a1a2e;
+      --text-muted:    #6b7280;
+      --border:        #e5e7eb;
+      --green:         #16a34a;
+      --orange:        #d97706;
+      --shadow-sm:     0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+      --shadow-md:     0 4px 16px rgba(0,0,0,.10);
+      --shadow-lg:     0 10px 40px rgba(0,0,0,.14);
+      --radius:        14px;
+      --radius-sm:     8px;
+      --transition:    .2s cubic-bezier(.4,0,.2,1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:         #0f0f17;
+        --surface:    #1a1a2e;
+        --surface2:   #252540;
+        --text:       #f0f0f8;
+        --text-muted: #9ca3af;
+        --border:     #2e2e4a;
+      }
+    }
+
+    /* ══════════════════════════════════════════════
+       RESET & BASE
+    ══════════════════════════════════════════════ */
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    html { scroll-behavior:smooth; }
+    body {
+      font-family:'Inter',sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      line-height:1.6;
+    }
+    img { display:block; max-width:100%; }
+    a { color:inherit; text-decoration:none; }
+
+    /* ══════════════════════════════════════════════
+       HEADER / NAV
+    ══════════════════════════════════════════════ */
+    header {
+      background: linear-gradient(135deg, var(--crimson-dark) 0%, var(--crimson) 55%, var(--crimson-light) 100%);
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(139,0,0,.4);
+    }
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+      gap: 16px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -.5px;
+    }
+    .logo-drop {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,.18);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform:scale(1); box-shadow:0 0 0 0 rgba(255,255,255,.4); }
+      50%      { transform:scale(1.08); box-shadow:0 0 0 8px rgba(255,255,255,0); }
+    }
+    nav { display:flex; gap:6px; }
+    nav button {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      color: #fff;
+      padding: 7px 16px;
+      border-radius: 50px;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    nav button:hover,
+    nav button.active {
+      background: rgba(255,255,255,.30);
+      border-color: rgba(255,255,255,.5);
+    }
+
+    /* ══════════════════════════════════════════════
+       MAIN LAYOUT
+    ══════════════════════════════════════════════ */
+    main {
+      max-width: 1280px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    /* ══════════════════════════════════════════════
+       SECTIONS (tab panels)
+    ══════════════════════════════════════════════ */
+    .section { display:none; animation: fadeIn .3s ease; }
+    .section.active { display:block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ══════════════════════════════════════════════
+       CARDS
+    ══════════════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 20px 24px 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-body { padding: 20px 24px 24px; }
+
+    /* ══════════════════════════════════════════════
+       STAT CARDS ROW
+    ══════════════════════════════════════════════ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .stat-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+    .stat-card::before {
+      content:'';
+      position:absolute;
+      top:0; left:0; right:0;
+      height:4px;
+    }
+    .stat-card.red::before   { background:linear-gradient(90deg,var(--crimson-dark),var(--crimson-light)); }
+    .stat-card.green::before { background:linear-gradient(90deg,#065f46,#34d399); }
+    .stat-card.orange::before{ background:linear-gradient(90deg,#92400e,#fbbf24); }
+    .stat-card.blue::before  { background:linear-gradient(90deg,#1e3a8a,#60a5fa); }
+    .stat-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: .78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -1px;
+    }
+    .stat-value.blood-group {
+      font-size: 1.5rem;
+    }
+
+    /* ══════════════════════════════════════════════
+       BAR CHART
+    ══════════════════════════════════════════════ */
+    .chart-wrap {
+      margin-bottom: 28px;
+    }
+    .chart-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      height: 160px;
+      padding: 0 8px;
+    }
+    .bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar {
+      width: 100%;
+      border-radius: 6px 6px 0 0;
+      background: linear-gradient(180deg, var(--crimson-light), var(--crimson-dark));
+      transition: height .6s cubic-bezier(.4,0,.2,1);
+      min-height: 4px;
+      position: relative;
+      cursor: pointer;
+    }
+    .bar:hover { filter:brightness(1.15); }
+    .bar-label {
+      font-size: .68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .bar-count {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ══════════════════════════════════════════════
+       TWO-COLUMN LAYOUT
+    ══════════════════════════════════════════════ */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media(max-width:768px){
+      .two-col { grid-template-columns:1fr; }
+      nav button { padding:6px 10px; font-size:.75rem; }
+    }
+
+    /* ══════════════════════════════════════════════
+       FORMS
+    ══════════════════════════════════════════════ */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .form-group input,
+    .form-group select {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: .95rem;
+      font-family: inherit;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+      width: 100%;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--crimson);
+      box-shadow: 0 0 0 3px rgba(192,24,42,.15);
+    }
+    .form-group input::placeholder { color:var(--text-muted); opacity:.7; }
+    .field-error {
+      font-size: .78rem;
+      color: var(--crimson-light);
+      display: none;
+    }
+    .form-group.has-error input,
+    .form-group.has-error select { border-color:var(--crimson-light); }
+    .form-group.has-error .field-error { display:block; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 10px 22px;
+      border-radius: 50px;
+      font-size: .88rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(192,24,42,.35);
+    }
+    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(192,24,42,.45); }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn-secondary:hover { background:var(--border); }
+    .btn-sm { padding:6px 14px; font-size:.78rem; }
+    .btn-orange {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color:#fff;
+      box-shadow:0 3px 10px rgba(217,119,6,.3);
+    }
+    .btn-orange:hover { transform:translateY(-1px); }
+    .btn:disabled { opacity:.55; cursor:not-allowed; transform:none !important; }
+
+    /* ── Search result cards ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .donor-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .donor-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+    .donor-card-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+    .donor-card-group {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,var(--crimson-dark),var(--crimson-light));
+      color: #fff;
+      font-weight: 800;
+      font-size: .9rem;
+      float: right;
+      margin-top: -6px;
+    }
+    .donor-card-city {
+      font-size: .85rem;
+      color: var(--text-muted);
+    }
+    .donor-card-phone a {
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      color: var(--crimson-light);
+      font-weight: 600;
+      font-size:.9rem;
+    }
+    .donor-card-phone a:hover { text-decoration:underline; }
+
+    /* ══════════════════════════════════════════════
+       TABLE
+    ══════════════════════════════════════════════ */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .86rem;
+    }
+    thead { background: linear-gradient(135deg,var(--crimson-dark),var(--crimson)); }
+    thead th {
+      padding: 13px 14px;
+      text-align: left;
+      font-weight: 700;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #fff;
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td {
+      padding: 12px 14px;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .badge-available {
+      background: rgba(22,163,74,.12);
+      color: var(--green);
+      border: 1px solid rgba(22,163,74,.25);
+    }
+    .badge-cooldown {
+      background: rgba(217,119,6,.12);
+      color: var(--orange);
+      border: 1px solid rgba(217,119,6,.25);
+    }
+    .badge-dot {
+      width:6px; height:6px;
+      border-radius:50%;
+      background:currentColor;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    /* ── Blood group pill ── */
+    .bg-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,var(--crimson-dark),var(--crimson-light));
+      color: #fff;
+      font-weight: 800;
+      font-size: .72rem;
+    }
+
+    /* ══════════════════════════════════════════════
+       TOAST NOTIFICATIONS
+    ══════════════════════════════════════════════ */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg);
+      min-width: 300px;
+      max-width: 420px;
+      animation: slideIn .3s ease;
+      backdrop-filter: blur(8px);
+    }
+    @keyframes slideIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes slideOut{ from{transform:translateX(0);opacity:1} to{transform:translateX(110%);opacity:0} }
+    .toast-success { background:rgba(16,185,129,.92); color:#fff; }
+    .toast-error   { background:rgba(220,38,38,.92);   color:#fff; }
+    .toast-icon { font-size:1.2rem; flex-shrink:0; }
+    .toast-body { flex:1; }
+    .toast-title { font-weight:700; font-size:.88rem; margin-bottom:2px; }
+    .toast-msg   { font-size:.8rem; opacity:.9; word-break:break-word; }
+
+    /* ══════════════════════════════════════════════
+       EMPTY STATE
+    ══════════════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+    .empty-state .es-icon { font-size:3rem; margin-bottom:12px; }
+    .empty-state p { font-size:.95rem; }
+
+    /* ══════════════════════════════════════════════
+       SPINNER
+    ══════════════════════════════════════════════ */
+    .spinner {
+      display:inline-block;
+      width:18px; height:18px;
+      border:2.5px solid rgba(255,255,255,.35);
+      border-top-color:#fff;
+      border-radius:50%;
+      animation:spin .7s linear infinite;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* ══════════════════════════════════════════════
+       SECTION HEADINGS
+    ══════════════════════════════════════════════ */
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title span { color:var(--crimson-light); }
+
+    /* ══════════════════════════════════════════════
+       AUTH OVERLAY
+    ══════════════════════════════════════════════ */
+    #auth-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a0005 0%, #2d0a14 30%, #0f0f17 100%);
+      transition: opacity .4s ease, visibility .4s ease;
+    }
+    #auth-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .auth-bg-shapes {
+      position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+    }
+    .auth-bg-shapes .shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: .18;
+    }
+    .auth-bg-shapes .shape-1 {
+      width: 400px; height: 400px;
+      background: var(--crimson);
+      top: -100px; right: -100px;
+      animation: float1 8s ease-in-out infinite;
+    }
+    .auth-bg-shapes .shape-2 {
+      width: 300px; height: 300px;
+      background: var(--crimson-light);
+      bottom: -80px; left: -80px;
+      animation: float2 10s ease-in-out infinite;
+    }
+    .auth-bg-shapes .shape-3 {
+      width: 200px; height: 200px;
+      background: #ff6b6b;
+      top: 50%; left: 50%;
+      animation: float3 12s ease-in-out infinite;
+    }
+    @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,40px)} }
+    @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }
+    @keyframes float3 { 0%,100%{transform:translate(-50%,-50%)} 50%{transform:translate(-30%,-70%)} }
+
+    .auth-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      background: rgba(26, 26, 46, .75);
+      backdrop-filter: blur(24px) saturate(1.8);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
+      border-radius: 24px;
+      border: 1px solid rgba(192, 24, 42, .25);
+      box-shadow: 0 32px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05) inset;
+      padding: 40px 36px;
+      animation: authSlideUp .5s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes authSlideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+
+    .auth-logo {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin-bottom: 8px;
+      font-size: 1.6rem; font-weight: 800; color: #fff;
+    }
+    .auth-logo .logo-drop {
+      width: 44px; height: 44px; font-size: 1.4rem;
+    }
+    .auth-subtitle {
+      text-align: center; color: rgba(255,255,255,.5);
+      font-size: .88rem; margin-bottom: 28px;
+    }
+
+    .auth-tabs {
+      display: flex; margin-bottom: 24px;
+      background: rgba(255,255,255,.06);
+      border-radius: 12px; padding: 4px;
+    }
+    .auth-tab {
+      flex: 1; padding: 10px; border: none;
+      background: transparent; color: rgba(255,255,255,.5);
+      font-size: .88rem; font-weight: 700;
+      border-radius: 10px; cursor: pointer;
+      transition: all .2s ease;
+    }
+    .auth-tab.active {
+      background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(192,24,42,.4);
+    }
+
+    .auth-form { display: none; }
+    .auth-form.active { display: block; animation: fadeIn .3s ease; }
+
+    .auth-form .form-group label { color: rgba(255,255,255,.6); }
+    .auth-form .form-group input {
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.12);
+      color: #fff;
+    }
+    .auth-form .form-group input:focus {
+      border-color: var(--crimson-light);
+      box-shadow: 0 0 0 3px rgba(192,24,42,.2);
+    }
+    .auth-form .form-group input::placeholder { color: rgba(255,255,255,.3); }
+
+    .auth-error {
+      background: rgba(220,38,38,.15);
+      border: 1px solid rgba(220,38,38,.3);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: .82rem;
+      margin-bottom: 14px;
+      display: none;
+      animation: fadeIn .2s ease;
+    }
+    .auth-error.visible { display: block; }
+
+    .auth-success {
+      background: rgba(22,163,74,.15);
+      border: 1px solid rgba(22,163,74,.3);
+      color: #86efac;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: .82rem;
+      margin-bottom: 14px;
+      display: none;
+      animation: fadeIn .2s ease;
+    }
+    .auth-success.visible { display: block; }
+
+    /* ── User info in header ── */
+    .user-info {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .user-greeting {
+      color: rgba(255,255,255,.85);
+      font-size: .82rem; font-weight: 600;
+      max-width: 150px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .btn-logout {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 50px;
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn-logout:hover {
+      background: rgba(220,38,38,.6);
+      border-color: rgba(220,38,38,.8);
+    }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE TWEAKS
+    ══════════════════════════════════════════════ */
+    @media(max-width:600px){
+      main { padding:0 14px; margin:20px auto; }
+      .stat-card { padding:16px 18px; }
+      .stat-value { font-size:1.6rem; }
+      #toast-container { right:12px; bottom:12px; }
+      .toast { min-width:unset; max-width:calc(100vw - 24px); }
+      .auth-card { margin:16px; padding:28px 22px; }
+      .user-greeting { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ AUTH OVERLAY ═══════════ -->
+<div id="auth-overlay">
+  <div class="auth-bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-drop">🩸</div>
+      BloodLink
+    </div>
+    <div class="auth-subtitle">Blood Donor Registry & Search Platform</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">🔑 Login</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">📝 Sign Up</button>
+    </div>
+
+    <div id="auth-error" class="auth-error"></div>
+    <div id="auth-success" class="auth-success"></div>
+
+    <!-- Login Form -->
+    <form class="auth-form active" id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="login-username">Username</label>
+        <input id="login-username" placeholder="Enter your username" autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" placeholder="Enter your password" autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn-primary" id="btn-login" style="width:100%; margin-top:8px;">
+        🔑 Login
+      </button>
+    </form>
+
+    <!-- Register Form -->
+    <form class="auth-form" id="signup-form" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label for="reg-fullname">Full Name</label>
+        <input id="reg-fullname" placeholder="e.g. Kavitha Nair" />
+      </div>
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input id="reg-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label for="reg-username">Username</label>
+        <input id="reg-username" placeholder="Choose a username" autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Password</label>
+        <input id="reg-password" type="password" placeholder="Min 6 characters" autocomplete="new-password" />
+      </div>
+      <button type="submit" class="btn btn-primary" id="btn-signup" style="width:100%; margin-top:8px;">
+        📝 Create Account
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-drop">🩸</div>
+      BloodLink
+    </div>
+    <nav id="main-nav">
+      <button class="active" data-section="dashboard" id="nav-dashboard">📊 Dashboard</button>
+      <button data-section="search"    id="nav-search">🔍 Search</button>
+      <button data-section="register"  id="nav-register">➕ Register</button>
+      <button data-section="donate"    id="nav-donate">💉 Donate</button>
+      <button data-section="donors"    id="nav-donors">📋 Donors</button>
+    </nav>
+    <div class="user-info" id="user-info" style="display:none;">
+      <span class="user-greeting" id="user-greeting"></span>
+      <button class="btn-logout" onclick="handleLogout()">🚪 Logout</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main>
+
+  <!-- ── DASHBOARD ── -->
+  <section class="section active" id="section-dashboard">
+    <h1 class="section-title">📊 Live <span>Dashboard</span></h1>
+
+    <!-- Stat cards -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card red">
+        <div class="stat-icon">🩸</div>
+        <div class="stat-label">Total Donors</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-label">Available Now</div>
+        <div class="stat-value" id="stat-available">—</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-label">In Cooldown</div>
+        <div class="stat-value" id="stat-cooldown">—</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-label">Most Common Group</div>
+        <div class="stat-value blood-group" id="stat-most">—</div>
+      </div>
+    </div>
+
+    <!-- Bar chart -->
+    <div class="card chart-wrap">
+      <div class="card-header">📈 Donors Per Blood Group</div>
+      <div class="card-body">
+        <div class="bar-chart" id="bar-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SEARCH ── -->
+  <section class="section" id="section-search">
+    <h2 class="section-title">🔍 Find a <span>Donor</span></h2>
+    <div class="card">
+      <div class="card-body">
+        <div class="two-col" style="align-items:flex-end; gap:12px;">
+          <div class="form-group" style="margin-bottom:0">
+            <label for="s-group">Blood Group</label>
+            <select id="s-group">
+              <option value="">— Select —</option>
+              <option>A+</option><option>A-</option>
+              <option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option>
+              <option>O+</option><option>O-</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label for="s-city">City</label>
+            <input id="s-city" placeholder="e.g. Chennai" />
+          </div>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:10px;">
+          <button class="btn btn-primary" id="btn-search" onclick="searchDonors()">
+            🔍 Search Donors
+          </button>
+          <button class="btn btn-secondary" onclick="clearSearch()">✕ Clear</button>
+        </div>
+        <div id="search-results"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── REGISTER ── -->
+  <section class="section" id="section-register">
+    <h2 class="section-title">➕ Register a <span>Donor</span></h2>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-body">
+          <form id="register-form" onsubmit="registerDonor(event)">
+            <div class="form-group" id="fg-name">
+              <label for="r-name">Full Name</label>
+              <input id="r-name" placeholder="e.g. Arjun Kumar" />
+              <span class="field-error">Name is required.</span>
+            </div>
+            <div class="form-group" id="fg-phone">
+              <label for="r-phone">Phone (10 digits)</label>
+              <input id="r-phone" placeholder="9876543210" maxlength="10" />
+              <span class="field-error">Enter a valid 10-digit phone number.</span>
+            </div>
+            <div class="form-group" id="fg-city">
+              <label for="r-city">City</label>
+              <input id="r-city" placeholder="e.g. Mumbai" />
+              <span class="field-error">City is required.</span>
+            </div>
+            <div class="form-group" id="fg-group">
+              <label for="r-group">Blood Group</label>
+              <select id="r-group">
+                <option value="">— Select —</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>AB+</option><option>AB-</option>
+                <option>O+</option><option>O-</option>
+              </select>
+              <span class="field-error">Blood group is required.</span>
+            </div>
+            <div class="form-group">
+              <label for="r-last-date">Last Donation Date (optional)</label>
+              <input id="r-last-date" type="date" />
+            </div>
+            <button type="submit" class="btn btn-primary" id="btn-register" style="width:100%; margin-top:6px;">
+              ➕ Register Donor
+            </button>
+          </form>
+        </div>
+      </div>
+      <!-- Tip card -->
+      <div class="card" style="height:fit-content;">
+        <div class="card-header">💡 Registration Tips</div>
+        <div class="card-body" style="color:var(--text-muted); font-size:.88rem; display:flex; flex-direction:column; gap:10px;">
+          <p>📌 A donor who last donated within <strong>90 days</strong> will be marked <strong>In Cooldown</strong> automatically.</p>
+          <p>📱 Phone number is used as the unique identifier — no duplicates allowed.</p>
+          <p>📅 If last donation date is left blank, the donor is immediately listed as <strong>Available</strong>.</p>
+          <p>🔄 The system runs a daily job at midnight to automatically re-enable donors after cooldown.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DONATE ── -->
+  <section class="section" id="section-donate">
+    <h2 class="section-title">💉 Record a <span>Donation</span></h2>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-body">
+          <form id="donate-form" onsubmit="recordDonation(event)">
+            <div class="form-group" id="fg-did">
+              <label for="d-id">Donor ID</label>
+              <input id="d-id" type="number" placeholder="e.g. 3" />
+              <span class="field-error">Donor ID is required.</span>
+            </div>
+            <div class="form-group" id="fg-hosp">
+              <label for="d-hospital">Hospital Name</label>
+              <input id="d-hospital" placeholder="e.g. AIIMS Delhi" />
+              <span class="field-error">Hospital name is required.</span>
+            </div>
+            <div class="form-group" id="fg-ddate">
+              <label for="d-date">Donation Date</label>
+              <input id="d-date" type="date" />
+              <span class="field-error">Donation date is required.</span>
+            </div>
+            <button type="submit" class="btn btn-primary" id="btn-donate" style="width:100%; margin-top:6px;">
+              💉 Record Donation
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="card" style="height:fit-content;">
+        <div class="card-header">⚠️ Cooldown Rule</div>
+        <div class="card-body" style="color:var(--text-muted); font-size:.88rem; display:flex; flex-direction:column; gap:10px;">
+          <p>A donor must wait <strong>at least 90 days</strong> between donations.</p>
+          <p>Recording a donation when the donor is still in cooldown returns a <strong>409 Conflict</strong> with the exact eligibility date.</p>
+          <p>After recording, the donor is automatically set to <strong>In Cooldown</strong> and won't appear in search results.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DONORS TABLE ── -->
+  <section class="section" id="section-donors">
+    <h2 class="section-title">📋 All <span>Donors</span></h2>
+    <div class="card">
+      <div class="card-body" style="padding-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; flex-wrap:wrap;">
+          <div style="font-size:.85rem; color:var(--text-muted);" id="table-info">Loading…</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary btn-sm" id="btn-prev" onclick="prevPage()" disabled>◀ Prev</button>
+            <button class="btn btn-secondary btn-sm" id="btn-next" onclick="nextPage()">Next ▶</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="donors-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Group</th>
+                <th>City</th>
+                <th>Phone</th>
+                <th>Last Donation</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="donors-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════ TOAST CONTAINER ═══════════ -->
+<div id="toast-container"></div>
+
+<!-- ═══════════ JAVASCRIPT ═══════════ -->
+<script>
+/* ──────────────────────────────────────────────
+   UTILITIES
+────────────────────────────────────────────── */
+const esc = s => String(s)
+  .replace(/&/g,'&amp;')
+  .replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;')
+  .replace(/'/g,'&#39;');
+
+/* ──────────────────────────────────────────────
+   MOCK BACKEND (Fallback for Standalone/Offline mode)
+────────────────────────────────────────────── */
+let isMockMode = false;
+const mockStore = {
+  donors: [
+    { id: 1, name: "Ramesh Kumar", phone: "9876543210", city: "Chennai", bloodGroup: "A+", lastDonationDate: null, available: true },
+    { id: 2, name: "Priya Sharma", phone: "9876543211", city: "Bangalore", bloodGroup: "O+", lastDonationDate: "2026-04-10", available: true },
+    { id: 3, name: "Arun Patel", phone: "9876543212", city: "Chennai", bloodGroup: "O-", lastDonationDate: "2026-09-01", available: false },
+    { id: 4, name: "Deepa Menon", phone: "9876543213", city: "Coimbatore", bloodGroup: "B+", lastDonationDate: null, available: true },
+    { id: 5, name: "Vikram Singh", phone: "9876543214", city: "Delhi", bloodGroup: "AB+", lastDonationDate: "2026-03-15", available: true },
+    { id: 6, name: "Ananya Reddy", phone: "9876543215", city: "Hyderabad", bloodGroup: "A-", lastDonationDate: null, available: true },
+    { id: 7, name: "Suresh Babu", phone: "9876543216", city: "Chennai", bloodGroup: "B+", lastDonationDate: null, available: true },
+    { id: 8, name: "Kavitha Nair", phone: "9876543217", city: "Kochi", bloodGroup: "O+", lastDonationDate: "2026-08-20", available: false }
+  ],
+  nextId: 9
+};
+
+function handleMockApi(path, opts={}) {
+  const method = (opts.method || 'GET').toUpperCase();
+  const body = opts.body ? JSON.parse(opts.body) : {};
+
+  if (path === '/donors/stats') {
+    const total = mockStore.donors.length;
+    const avail = mockStore.donors.filter(d => d.available).length;
+    const cooldown = total - avail;
+    const perGroup = {};
+    let maxGroup = null, maxCount = -1;
+    ['A+','A-','B+','B-','AB+','AB-','O+','O-'].forEach(g => {
+      const c = mockStore.donors.filter(d => d.bloodGroup === g).length;
+      perGroup[g] = c;
+      if (c > maxCount) { maxCount = c; maxGroup = g; }
+    });
+    return Promise.resolve({
+      totalDonors: total,
+      availableDonors: avail,
+      inCooldown: cooldown,
+      mostCommonBloodGroup: maxCount > 0 ? maxGroup : "N/A",
+      donorsPerBloodGroup: perGroup
+    });
+  }
+
+  if (path.startsWith('/donors/search')) {
+    const url = new URL('http://dummy' + path);
+    const bg = url.searchParams.get('bloodGroup')?.toLowerCase();
+    const city = url.searchParams.get('city')?.toLowerCase();
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+
+    const matches = mockStore.donors.filter(d =>
+      d.bloodGroup.toLowerCase() === bg &&
+      d.city.toLowerCase() === city &&
+      d.available &&
+      (!d.lastDonationDate || new Date(d.lastDonationDate) <= cutoff)
+    );
+    return Promise.resolve(matches);
+  }
+
+  if (path === '/donors' && method === 'POST') {
+    const newDonor = {
+      id: mockStore.nextId++,
+      name: body.name,
+      phone: body.phone,
+      city: body.city,
+      bloodGroup: body.bloodGroup,
+      lastDonationDate: body.lastDonationDate || null,
+      available: !body.lastDonationDate || (new Date() - new Date(body.lastDonationDate)) / (1000*60*60*24) >= 90
+    };
+    mockStore.donors.unshift(newDonor);
+    return Promise.resolve(newDonor);
+  }
+
+  if (path.startsWith('/donors?') || path === '/donors') {
+    const url = new URL('http://dummy' + path);
+    const page = parseInt(url.searchParams.get('page') || '0');
+    const size = parseInt(url.searchParams.get('size') || '10');
+    const start = page * size;
+    const content = mockStore.donors.slice(start, start + size);
+    return Promise.resolve({
+      content: content,
+      totalElements: mockStore.donors.length,
+      totalPages: Math.ceil(mockStore.donors.length / size),
+      number: page
+    });
+  }
+
+  if (path.includes('/donations') && method === 'POST') {
+    const parts = path.split('/');
+    const donorId = parseInt(parts[2]);
+    const donor = mockStore.donors.find(d => d.id === donorId);
+    if (!donor) return Promise.reject({ message: `Donor not found with id: ${donorId}` });
+
+    if (donor.lastDonationDate) {
+      const lastDate = new Date(donor.lastDonationDate);
+      const daysAgo = (new Date() - lastDate) / (1000*60*60*24);
+      if (daysAgo < 90) {
+        const eligible = new Date(lastDate);
+        eligible.setDate(eligible.getDate() + 90);
+        return Promise.reject({
+          message: `Donor ${donor.name} is in cooldown. Eligible to donate again from: ${eligible.toISOString().split('T')[0]}`
+        });
+      }
+    }
+
+    donor.lastDonationDate = body.donationDate;
+    donor.available = false;
+    return Promise.resolve({
+      id: Math.floor(Math.random() * 1000),
+      donorId: donor.id,
+      donorName: donor.name,
+      donationDate: body.donationDate,
+      hospital: body.hospital
+    });
+  }
+
+  if (path.endsWith('/unavailable') && method === 'PUT') {
+    const parts = path.split('/');
+    const donorId = parseInt(parts[2]);
+    const donor = mockStore.donors.find(d => d.id === donorId);
+    if (donor) donor.available = false;
+    return Promise.resolve(donor);
+  }
+
+  return Promise.reject({ message: 'Not found' });
+}
+
+const api = (path, opts={}) => {
+  if (isMockMode) {
+    return handleMockApi(path, opts);
+  }
+  return fetch('/api' + path, { headers:{'Content-Type':'application/json'}, ...opts })
+    .then(async r => {
+      const ct = r.headers.get('content-type') || '';
+      // If the response is not JSON (e.g. static server returning HTML 404), switch to mock
+      if (!ct.includes('application/json')) {
+        if (!isMockMode) {
+          isMockMode = true;
+          console.warn('Backend API not available (non-JSON response). Switching to Standalone Demo Mode.');
+        }
+        return handleMockApi(path, opts);
+      }
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw data;
+      return data;
+    })
+    .catch(err => {
+      // Fallback to mock mode if backend is not running or unreachable
+      if (!isMockMode && (err instanceof TypeError || err.message?.includes('Failed to fetch') || Object.keys(err).length === 0)) {
+        isMockMode = true;
+        console.warn('Backend API unreachable. Switching to Standalone Demo Mode.');
+        return handleMockApi(path, opts);
+      }
+      throw err;
+    });
+};
+
+/* ──────────────────────────────────────────────
+   TOAST
+────────────────────────────────────────────── */
+function toast(type, title, msg) {
+  const tc  = document.getElementById('toast-container');
+  const div = document.createElement('div');
+  div.className = `toast toast-${type}`;
+  div.innerHTML = `
+    <div class="toast-icon">${type==='success'?'✅':'❌'}</div>
+    <div class="toast-body">
+      <div class="toast-title">${esc(title)}</div>
+      <div class="toast-msg">${esc(msg||'')}</div>
+    </div>`;
+  tc.appendChild(div);
+  setTimeout(() => {
+    div.style.animation = 'slideOut .3s ease forwards';
+    setTimeout(() => div.remove(), 320);
+  }, 4000);
+}
+
+function apiError(err) {
+  const msg = err?.error || err?.message || JSON.stringify(err);
+  const fields = err?.fields;
+  let detail = msg;
+  if (fields) {
+    detail = Object.entries(fields).map(([f,m])=>`${f}: ${m}`).join('; ');
+  }
+  toast('error', 'Error', detail);
+}
+
+/* ──────────────────────────────────────────────
+   NAVIGATION (tab switching)
+────────────────────────────────────────────── */
+document.getElementById('main-nav').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-section]');
+  if (!btn) return;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('section-'+btn.dataset.section).classList.add('active');
+  btn.classList.add('active');
+  if (btn.dataset.section === 'dashboard') loadStats();
+  if (btn.dataset.section === 'donors')    loadDonors();
+});
+
+/* ──────────────────────────────────────────────
+   STATS + BAR CHART
+────────────────────────────────────────────── */
+async function loadStats() {
+  try {
+    const s = await api('/donors/stats');
+    document.getElementById('stat-total').textContent     = s.totalDonors;
+    document.getElementById('stat-available').textContent = s.availableDonors;
+    document.getElementById('stat-cooldown').textContent  = s.inCooldown;
+    document.getElementById('stat-most').textContent      = s.mostCommonBloodGroup || '—';
+    renderBarChart(s.donorsPerBloodGroup || {});
+  } catch(e) { apiError(e); }
+}
+
+function renderBarChart(data) {
+  const chart   = document.getElementById('bar-chart');
+  chart.innerHTML = '';
+  const entries = Object.entries(data);
+  if (!entries.length) {
+    chart.innerHTML = '<div class="empty-state" style="width:100%"><div class="es-icon">📊</div><p>No data yet</p></div>';
+    return;
+  }
+  const max = Math.max(...entries.map(([,v])=>v), 1);
+  entries.forEach(([group, count]) => {
+    const heightPct = Math.max((count / max) * 100, 3);
+    const div = document.createElement('div');
+    div.className = 'bar-group';
+    div.innerHTML = `
+      <div class="bar-count">${count}</div>
+      <div class="bar" title="${esc(group)}: ${count}" style="height:${heightPct}%"></div>
+      <div class="bar-label">${esc(group)}</div>`;
+    chart.appendChild(div);
+  });
+}
+
+/* ──────────────────────────────────────────────
+   SEARCH
+────────────────────────────────────────────── */
+async function searchDonors() {
+  const group = document.getElementById('s-group').value.trim();
+  const city  = document.getElementById('s-city').value.trim();
+  if (!group || !city) { toast('error','Missing fields','Select blood group and enter city.'); return; }
+
+  const btn = document.getElementById('btn-search');
+  btn.innerHTML = '<span class="spinner"></span> Searching…';
+  btn.disabled  = true;
+
+  try {
+    const results = await api(`/donors/search?bloodGroup=${encodeURIComponent(group)}&city=${encodeURIComponent(city)}`);
+    renderSearchResults(results);
+  } catch(e) {
+    apiError(e);
+    document.getElementById('search-results').innerHTML = '';
+  } finally {
+    btn.innerHTML = '🔍 Search Donors';
+    btn.disabled  = false;
+  }
+}
+
+function clearSearch() {
+  document.getElementById('s-group').value = '';
+  document.getElementById('s-city').value  = '';
+  document.getElementById('search-results').innerHTML = '';
+}
+
+function renderSearchResults(donors) {
+  const el = document.getElementById('search-results');
+  if (!donors.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">🩺</div><p>No available donors found for this blood group and city.</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="results-grid">${donors.map(d=>`
+    <div class="donor-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div class="donor-card-name">${esc(d.name)}</div>
+        <div class="donor-card-group">${esc(d.bloodGroup)}</div>
+      </div>
+      <div class="donor-card-city">📍 ${esc(d.city)}</div>
+      <div class="donor-card-phone">📞 <a href="tel:${esc(d.phone)}">${esc(d.phone)}</a></div>
+      ${d.lastDonationDate
+        ? `<div style="font-size:.78rem;color:var(--text-muted);">Last donated: ${esc(d.lastDonationDate)}</div>`
+        : `<div style="font-size:.78rem;color:var(--green);">Never donated</div>`}
+    </div>`).join('')}</div>`;
+}
+
+/* ──────────────────────────────────────────────
+   REGISTER DONOR
+────────────────────────────────────────────── */
+async function registerDonor(e) {
+  e.preventDefault();
+  const name   = document.getElementById('r-name').value.trim();
+  const phone  = document.getElementById('r-phone').value.trim();
+  const city   = document.getElementById('r-city').value.trim();
+  const group  = document.getElementById('r-group').value.trim();
+  const ld     = document.getElementById('r-last-date').value;
+
+  // client-side validation
+  let ok = true;
+  const setErr = (id, show) => {
+    document.getElementById(id).classList.toggle('has-error', show);
+    if (show) ok = false;
+  };
+  setErr('fg-name',  !name);
+  setErr('fg-phone', !/^\d{10}$/.test(phone));
+  setErr('fg-city',  !city);
+  setErr('fg-group', !group);
+  if (!ok) return;
+
+  const btn = document.getElementById('btn-register');
+  btn.innerHTML = '<span class="spinner"></span> Registering…';
+  btn.disabled  = true;
+
+  const body = { name, phone, city, bloodGroup: group };
+  if (ld) body.lastDonationDate = ld;
+
+  try {
+    const donor = await api('/donors', { method:'POST', body:JSON.stringify(body) });
+    toast('success','Donor Registered!', `${donor.name} (ID: ${donor.id}) added successfully.`);
+    document.getElementById('register-form').reset();
+    ['fg-name','fg-phone','fg-city','fg-group'].forEach(id=>
+      document.getElementById(id).classList.remove('has-error'));
+    refreshAll();
+  } catch(e) {
+    apiError(e);
+  } finally {
+    btn.innerHTML = '➕ Register Donor';
+    btn.disabled  = false;
+  }
+}
+
+/* ──────────────────────────────────────────────
+   RECORD DONATION
+────────────────────────────────────────────── */
+async function recordDonation(e) {
+  e.preventDefault();
+  const did  = document.getElementById('d-id').value.trim();
+  const hosp = document.getElementById('d-hospital').value.trim();
+  const date = document.getElementById('d-date').value;
+
+  let ok = true;
+  const setErr = (id, show) => {
+    document.getElementById(id).classList.toggle('has-error', show);
+    if (show) ok = false;
+  };
+  setErr('fg-did',  !did);
+  setErr('fg-hosp', !hosp);
+  setErr('fg-ddate',!date);
+  if (!ok) return;
+
+  const btn = document.getElementById('btn-donate');
+  btn.innerHTML = '<span class="spinner"></span> Recording…';
+  btn.disabled  = true;
+
+  try {
+    const rec = await api(`/donors/${encodeURIComponent(did)}/donations`, {
+      method: 'POST',
+      body: JSON.stringify({ donorId: Number(did), hospital: hosp, donationDate: date })
+    });
+    toast('success','Donation Recorded!',
+      `Donation at ${rec.hospital} on ${rec.donationDate} saved for ${rec.donorName}.`);
+    document.getElementById('donate-form').reset();
+    ['fg-did','fg-hosp','fg-ddate'].forEach(id=>
+      document.getElementById(id).classList.remove('has-error'));
+    refreshAll();
+  } catch(e) {
+    apiError(e);
+  } finally {
+    btn.innerHTML = '💉 Record Donation';
+    btn.disabled  = false;
+  }
+}
+
+/* ──────────────────────────────────────────────
+   DONORS TABLE (paginated)
+────────────────────────────────────────────── */
+let currentPage = 0;
+const PAGE_SIZE  = 10;
+
+async function loadDonors(page) {
+  if (page !== undefined) currentPage = page;
+  try {
+    const data = await api(`/donors?page=${currentPage}&size=${PAGE_SIZE}`);
+    renderDonorsTable(data.content || data);
+
+    // pagination info
+    const total   = data.totalElements ?? (data.content ?? data).length;
+    const pages   = data.totalPages   ?? 1;
+    const from    = currentPage * PAGE_SIZE + 1;
+    const to      = Math.min((currentPage+1)*PAGE_SIZE, total);
+    document.getElementById('table-info').textContent =
+      `Showing ${from}–${to} of ${total} donors`;
+    document.getElementById('btn-prev').disabled = currentPage === 0;
+    document.getElementById('btn-next').disabled = currentPage >= pages - 1;
+  } catch(e) { apiError(e); }
+}
+
+function prevPage() { if (currentPage > 0) loadDonors(currentPage - 1); }
+function nextPage() { loadDonors(currentPage + 1); }
+
+function renderDonorsTable(donors) {
+  const tbody = document.getElementById('donors-tbody');
+  if (!donors.length) {
+    tbody.innerHTML = `<tr><td colspan="8">
+      <div class="empty-state"><div class="es-icon">🩸</div><p>No donors registered yet.</p></div>
+    </td></tr>`;
+    return;
+  }
+  tbody.innerHTML = donors.map(d => `
+    <tr>
+      <td><strong>#${esc(d.id)}</strong></td>
+      <td>${esc(d.name)}</td>
+      <td><div class="bg-pill">${esc(d.bloodGroup)}</div></td>
+      <td>${esc(d.city)}</td>
+      <td><a href="tel:${esc(d.phone)}" style="color:var(--crimson-light);font-weight:600;">${esc(d.phone)}</a></td>
+      <td>${d.lastDonationDate ? esc(d.lastDonationDate) : '<span style="color:var(--text-muted)">Never</span>'}</td>
+      <td>${d.available
+        ? `<span class="badge badge-available"><span class="badge-dot"></span>Available</span>`
+        : `<span class="badge badge-cooldown"><span class="badge-dot"></span>Cooldown</span>`}</td>
+      <td style="display:flex; gap:6px;">
+        <button class="btn btn-primary btn-sm" onclick="quickDonate(${d.id})" title="Record donation">💉 Donated</button>
+        <button class="btn btn-orange btn-sm" onclick="pauseDonor(${d.id})" title="Mark unavailable">⏸ Pause</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function quickDonate(id) {
+  // Navigate to donate tab and pre-fill ID
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('section-donate').classList.add('active');
+  document.getElementById('nav-donate').classList.add('active');
+  document.getElementById('d-id').value = id;
+  // default today
+  document.getElementById('d-date').value = new Date().toISOString().split('T')[0];
+}
+
+async function pauseDonor(id) {
+  try {
+    await api(`/donors/${id}/unavailable`, { method:'PUT' });
+    toast('success','Donor Paused', `Donor #${id} marked as unavailable.`);
+    refreshAll();
+  } catch(e) { apiError(e); }
+}
+
+/* ──────────────────────────────────────────────
+   REFRESH ALL
+────────────────────────────────────────────── */
+function refreshAll() {
+  loadStats();
+  loadDonors(0);
+}
+
+/* ──────────────────────────────────────────────
+   AUTHENTICATION
+────────────────────────────────────────────── */
+let currentUser = null;
+const mockUsers = [];  // for standalone demo mode
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+  });
+  document.getElementById('login-form').classList.toggle('active', tab === 'login');
+  document.getElementById('signup-form').classList.toggle('active', tab === 'register');
+  document.getElementById('auth-error').className = 'auth-error';
+  document.getElementById('auth-success').className = 'auth-success';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.className = 'auth-error visible';
+  document.getElementById('auth-success').className = 'auth-success';
+}
+
+function showAuthSuccess(msg) {
+  const el = document.getElementById('auth-success');
+  el.textContent = msg;
+  el.className = 'auth-success visible';
+  document.getElementById('auth-error').className = 'auth-error';
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  if (!username || !password) {
+    showAuthError('Please enter both username and password.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-login');
+  btn.innerHTML = '<span class="spinner"></span> Logging in…';
+  btn.disabled = true;
+
+  try {
+    const res = await authApi('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    });
+
+    if (res.message === 'Invalid username or password.') {
+      showAuthError(res.message);
+    } else {
+      currentUser = res;
+      onLoginSuccess();
+    }
+  } catch(err) {
+    showAuthError(err?.message || err?.error || 'Login failed. Please try again.');
+  } finally {
+    btn.innerHTML = '🔑 Login';
+    btn.disabled = false;
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const fullName = document.getElementById('reg-fullname').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+
+  if (!fullName || !email || !username || !password) {
+    showAuthError('All fields are required.');
+    return;
+  }
+  if (password.length < 6) {
+    showAuthError('Password must be at least 6 characters.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-signup');
+  btn.innerHTML = '<span class="spinner"></span> Creating…';
+  btn.disabled = true;
+
+  try {
+    const res = await authApi('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ fullName, email, username, password })
+    });
+
+    if (res.error || res.message?.includes('taken') || res.message?.includes('registered')) {
+      showAuthError(res.error || res.message);
+    } else {
+      showAuthSuccess('Account created! Please login.');
+      document.getElementById('signup-form').reset();
+      setTimeout(() => switchAuthTab('login'), 1500);
+    }
+  } catch(err) {
+    showAuthError(err?.message || err?.error || 'Registration failed.');
+  } finally {
+    btn.innerHTML = '📝 Create Account';
+    btn.disabled = false;
+  }
+}
+
+async function handleLogout() {
+  try {
+    if (!isMockMode) {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    }
+  } catch(e) { /* ignore */ }
+  currentUser = null;
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  document.getElementById('user-info').style.display = 'none';
+  document.getElementById('login-form').reset();
+  toast('success', 'Logged Out', 'You have been logged out successfully.');
+}
+
+function onLoginSuccess() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-greeting').textContent =
+    '👋 ' + (currentUser?.fullName || currentUser?.username || 'User');
+  refreshAll();
+}
+
+// Auth API helper — uses mock in standalone mode
+async function authApi(path, opts={}) {
+  if (isMockMode) {
+    return handleMockAuth(path, opts);
+  }
+  try {
+    const r = await fetch('/api' + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts
+    });
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      isMockMode = true;
+      return handleMockAuth(path, opts);
+    }
+    return await r.json();
+  } catch(err) {
+    if (err instanceof TypeError) {
+      isMockMode = true;
+      return handleMockAuth(path, opts);
+    }
+    throw err;
+  }
+}
+
+function handleMockAuth(path, opts={}) {
+  const body = opts.body ? JSON.parse(opts.body) : {};
+
+  if (path === '/auth/login') {
+    const user = mockUsers.find(u => u.username === body.username && u.password === body.password);
+    if (!user) {
+      // Also allow a default demo user
+      if (body.username === 'admin' && body.password === 'admin123') {
+        return Promise.resolve({
+          message: 'Login successful!',
+          username: 'admin', fullName: 'Admin User',
+          email: 'admin@bloodlink.com', role: 'USER'
+        });
+      }
+      return Promise.resolve({ message: 'Invalid username or password.' });
+    }
+    return Promise.resolve({
+      message: 'Login successful!',
+      username: user.username, fullName: user.fullName,
+      email: user.email, role: 'USER'
+    });
+  }
+
+  if (path === '/auth/register') {
+    if (mockUsers.find(u => u.username === body.username)) {
+      return Promise.reject({ message: "Username '" + body.username + "' is already taken." });
+    }
+    if (mockUsers.find(u => u.email === body.email)) {
+      return Promise.reject({ message: "Email '" + body.email + "' is already registered." });
+    }
+    mockUsers.push({ ...body });
+    return Promise.resolve({ message: 'Registration successful! Please login.' });
+  }
+
+  if (path === '/auth/me') {
+    return Promise.resolve({ message: 'Not authenticated' });
+  }
+
+  return Promise.reject({ message: 'Unknown auth endpoint' });
+}
+
+async function checkSession() {
+  try {
+    const res = await authApi('/auth/me');
+    if (res.username && res.message === 'Authenticated') {
+      currentUser = res;
+      onLoginSuccess();
+      return;
+    }
+  } catch(e) { /* not logged in */ }
+  // Show login page
+  document.getElementById('auth-overlay').classList.remove('hidden');
+}
+
+/* ──────────────────────────────────────────────
+   INIT
+────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today as max date for date inputs
+  const today = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('input[type="date"]').forEach(inp => {
+    inp.setAttribute('max', today);
+    if (inp.id === 'd-date') inp.value = today;
+  });
+  checkSession();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "bloodlink.cooldown-days",
+      "type": "java.lang.Integer",
+      "description": "Minimum number of days between blood donations."
+    }
+  ]
+}

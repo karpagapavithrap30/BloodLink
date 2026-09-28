@@ -1,0 +1,23 @@
+# ─── Build output ───
+target/
+
+# ─── IDE ───
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# ─── OS ───
+.DS_Store
+Thumbs.db
+
+# ─── Maven wrapper (jar) ───
+.mvn/wrapper/maven-wrapper.jar
+
+# ─── Logs ───
+*.log
+
+# ─── Agents/AI ───
+.agents/
+.gemini/
